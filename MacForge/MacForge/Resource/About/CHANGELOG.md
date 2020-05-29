@@ -1,22 +1,29 @@
-### WIP
+### TODO
 
--   Bundle ratings and reviews
--   Added more applications that don't require SIP
--   Added indicators to Bundle pages which show bundle requirements to function
--   Hide bundles that dont work on users macOS version
+- Finish all app settings
+- Better link helper and main app functionallity
+- System info scrolling
+- Tweak preference view scrolling
+
+- Bundle ratings and reviews
+- Added more applications that don't require SIP
+- Added indicators to Bundle pages which show bundle requirements to function
+- Hide bundles that dont work on users macOS version
 
 ### 0.20.1
 
 -   UI redesign
--   Major code clean
+-   Major code clean / Organization
 -   macforge:// links now just use the bundleID
+-   MacForge can now host a UI for plugin settings [@jslegendre](https://github.com/jslegendre)
+-   Improvements made to injector
 -   Removed option for multiple sources
 -   Removed search bar from discover view
--   Removed navigation bar from discover view-   Updated Xcode Plugin template
+-   Removed navigation bar from discover view
+-   Updated Xcode Plugin template
 -   Updated Demo Plugin
 -   Updated information regarding AMFI
 -   Updated SIP notification window
--   Repect launch at login setting
 
 ### 0.14.2
 

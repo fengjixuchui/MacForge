@@ -143,7 +143,7 @@ NSDictionary *testing;
     self.layer.masksToBounds = YES;
     
 //    NSArray *allPlugins;
-    MSPlugin *plugin = [pluginData sharedInstance].currentPlugin;
+    MF_Plugin *plugin = [MF_repoData sharedInstance].currentPlugin;
     
     if (plugin != nil) {
         item = plugin.webPlist;
@@ -273,7 +273,7 @@ NSDictionary *testing;
 //            [installedPlugins setObject:itemDict forKey:[itemDict objectForKey:@"bundleId"]];
 //        }
         
-        NSMutableDictionary *installedPlugins = [PluginManager.sharedInstance getInstalledPlugins];
+        NSMutableDictionary *installedPlugins = [MF_PluginManager.sharedInstance getInstalledPlugins];
 
         //    NSDate *methodFinish = [NSDate date];
         //    NSTimeInterval executionTime = [methodFinish timeIntervalSinceDate:startTime];
@@ -292,7 +292,7 @@ NSDictionary *testing;
 //                installed = true;
 //        }
            
-        if ([PluginManager.sharedInstance pluginLocalPath:bundleID].length) {
+        if ([MF_PluginManager.sharedInstance pluginLocalPath:bundleID].length) {
 //        if ([installedPlugins objectForKey:[item objectForKey:@"package"]]) {
             // Pack already exists
             [self.bundleDelete setEnabled:true];
@@ -338,7 +338,8 @@ NSDictionary *testing;
             //        NSString *price = [NSString stringWithFormat:@"%@", [item objectForKey:@"price"]];
             if ([[item objectForKey:@"payed"] boolValue]) {
                 self.bundleInstall.title = @"Verifying...";
-//                [self verifyPurchased];
+                self.bundleInstall.enabled = false;
+                [self verifyPurchased];
                 [self.bundleInstall setAction:@selector(installOrPurchase)];
             } else {
                 [self.bundleInstall setEnabled:true];
@@ -421,8 +422,15 @@ NSDictionary *testing;
         [self.bundlePreview1 sd_setImageWithURL:abc[0]
                                placeholderImage:[UIImage imageNamed:NSImageNameBookmarksTemplate]];
         
+        self.bundlePreview1.layer.backgroundColor = [NSColor colorWithRed:1 green:1 blue:1 alpha:0.6].CGColor;
+        self.bundlePreview1.layer.cornerRadius = 5;
+        
+        
         [self.bundlePreview2 sd_setImageWithURL:abc[1]
                                placeholderImage:[UIImage imageNamed:NSImageNameBookmarksTemplate]];
+        
+        self.bundlePreview2.layer.backgroundColor = [NSColor colorWithRed:1 green:1 blue:1 alpha:0.6].CGColor;
+        self.bundlePreview2.layer.cornerRadius = 5;
         
 //        self.bundlePreview1.sd_imageIndicator = SDWebImageActivityIndicator.grayIndicator;
 //        self.bundlePreview1.sd_imageIndicator = SDWebImageProgressIndicator.defaultIndicator;
@@ -445,7 +453,7 @@ NSDictionary *testing;
             [self.bundleImage sd_setImageWithURL:[NSURL URLWithString:imgurl]
                                  placeholderImage:[UIImage imageNamed:NSImageNameApplicationIcon]];
         } else {
-            NSImage *icon = [PluginManager pluginGetIcon:plugin.webPlist];
+            NSImage *icon = [MF_PluginManager pluginGetIcon:plugin.webPlist];
             self.bundleImage.image = icon;
         }
         
@@ -459,6 +467,10 @@ NSDictionary *testing;
             hasDescription = false;
         if (![item objectForKey:@"description"])
             hasDescription = false;
+        
+        NSRect prev = _viewPreviews.frame;
+        prev.size.height = self.bundlePreview1.frame.size.width / 1.6 + 40;
+        [_viewPreviews setFrame:prev];
         
         NSUInteger diff = 10;
         NSUInteger newDescHeight = 0;
@@ -527,7 +539,7 @@ NSDictionary *testing;
 }
 
 - (IBAction)shareMe:(id)sender {
-    MSPlugin *plugin = [pluginData sharedInstance].currentPlugin;
+    MF_Plugin *plugin = [MF_repoData sharedInstance].currentPlugin;
     
     if (plugin.webRepository) {
     }
@@ -603,36 +615,38 @@ NSDictionary *testing;
 - (void)verifyPurchased {
 //    NSLog(@"%s", __PRETTY_FUNCTION__);
     
-    NSString *myPaddleProductID = [item objectForKey:@"productID"];
-    if (myPaddleProductID != nil) {
-        NSString *myPaddleVendorID = @"26643";
-        NSString *myPaddleAPIKey = @"02a3c57238af53b3c465ef895729c765";
-
-        NSDictionary *dict = [item objectForKey:@"paddle"];
-        if (dict != nil) {
-            myPaddleVendorID = [dict objectForKey:@"vendorid"];
-            myPaddleAPIKey = [dict objectForKey:@"apikey"];
-        }
+    [MF_Purchase verifyPurchased:[MF_repoData sharedInstance].currentPlugin :self.bundleInstall];
     
-        NSBundle *b = [NSBundle mainBundle];
-        NSString *execPath = [b pathForResource:@"purchaseValidationApp" ofType:@"app"];
-        execPath = [NSString stringWithFormat:@"%@/Contents/MacOS/purchaseValidationApp", execPath];
-        
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            NSTask *task = [NSTask launchedTaskWithLaunchPath:execPath arguments:@[myPaddleProductID, myPaddleVendorID, myPaddleAPIKey, @"-v"]];
-            [task waitUntilExit];
-         
-           //This is your completion handler
-           dispatch_sync(dispatch_get_main_queue(), ^{
-               if ([task terminationStatus] == 69) {
-                    NSLog(@"Verified...");
-                    self.bundleInstall.title = @"GET";
-                } else {
-                    self.bundleInstall.title = self.bundlePrice.stringValue;
-                }
-           });
-        });
-    }
+//    NSString *myPaddleProductID = [item objectForKey:@"productID"];
+//    if (myPaddleProductID != nil) {
+//        NSString *myPaddleVendorID = @"26643";
+//        NSString *myPaddleAPIKey = @"02a3c57238af53b3c465ef895729c765";
+//
+//        NSDictionary *dict = [item objectForKey:@"paddle"];
+//        if (dict != nil) {
+//            myPaddleVendorID = [dict objectForKey:@"vendorid"];
+//            myPaddleAPIKey = [dict objectForKey:@"apikey"];
+//        }
+//
+//        NSBundle *b = [NSBundle mainBundle];
+//        NSString *execPath = [b pathForResource:@"purchaseValidationApp" ofType:@"app"];
+//        execPath = [NSString stringWithFormat:@"%@/Contents/MacOS/purchaseValidationApp", execPath];
+//
+//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+//            NSTask *task = [NSTask launchedTaskWithLaunchPath:execPath arguments:@[myPaddleProductID, myPaddleVendorID, myPaddleAPIKey, @"-v"]];
+//            [task waitUntilExit];
+//
+//           //This is your completion handler
+//           dispatch_sync(dispatch_get_main_queue(), ^{
+//               if ([task terminationStatus] == 69) {
+//                    NSLog(@"Verified...");
+//                    self.bundleInstall.title = @"GET";
+//                } else {
+//                    self.bundleInstall.title = self.bundlePrice.stringValue;
+//                }
+//           });
+//        });
+//    }
 }
 
 - (void)installOrPurchase {
@@ -680,8 +694,8 @@ NSDictionary *testing;
 }
 
 - (void)pluginInstall {
-    [PluginManager.sharedInstance pluginUpdateOrInstall:item :@"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo" withCompletionHandler:^(BOOL res) {
-            [PluginManager.sharedInstance readPlugins:nil];
+    [MF_PluginManager.sharedInstance pluginUpdateOrInstall:item :@"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo" withCompletionHandler:^(BOOL res) {
+            [MF_PluginManager.sharedInstance readPlugins:nil];
             [self.bundleInstall setTitle:@"Open"];
             [self.bundleInstall setAction:@selector(pluginFinder)];
             [self.bundleDelete setEnabled:true];
@@ -690,15 +704,15 @@ NSDictionary *testing;
 }
 
 - (void)pluginFinder {
-    [PluginManager.sharedInstance pluginRevealFinder:item];
+    [MF_PluginManager.sharedInstance pluginRevealFinder:item];
 }
 
 - (void)pluginDelete {
-    [PluginManager.sharedInstance pluginDelete:item];
-    [PluginManager.sharedInstance readPlugins:nil];
+    [MF_PluginManager.sharedInstance pluginDelete:item];
+    [MF_PluginManager.sharedInstance readPlugins:nil];
     if ([[item objectForKey:@"payed"] boolValue]) {
         self.bundleInstall.title = @"Verifying...";
-//        [self verifyPurchased];
+        [self verifyPurchased];
         [self.bundleInstall setAction:@selector(installOrPurchase)];
     } else {
         [self.bundleInstall setEnabled:true];
@@ -716,26 +730,28 @@ NSDictionary *testing;
         MF_bundlePreviewView *v = (MF_bundlePreviewView*)myDelegate.viewImages;
         NSInteger curprev = self.currentPreview;
         
-        NSLog(@"%ld", (long)curprev);
+//        NSLog(@"%ld", (long)curprev);
         
         if ([sender isEqualTo:self.bundlePreviewButton2])
             if (curprev % 2 == 0)
                 curprev++;
             
+        NSView *mainViewHolder = self.superview.superview.superview.superview;
+        
         if (curprev > self.bundlePreviewImages.count - 1) curprev = 0;
         v.currentPreview = curprev;
         v.bundlePreviewImages = self.bundlePreviewImages;
         [v.bundlePreview setImage:self.bundlePreviewImages[curprev]];
-        [v setFrame:self.frame];
+        [v setFrame:mainViewHolder.frame];
         [v setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
 //        [v setFrameOrigin:NSMakePoint(0, 0)];
-        [v setFrameOrigin:NSMakePoint(self.frame.size.width, 0)];
+        [v setFrameOrigin:NSMakePoint(mainViewHolder.frame.size.width, 0)];
         [v setTranslatesAutoresizingMaskIntoConstraints:true];
-        [self addSubview:v];
+        [mainViewHolder addSubview:v];
                 
         [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context){
             [context setDuration:0.2];
-            NSPoint startPoint = NSMakePoint(self.frame.size.width, 0);
+            NSPoint startPoint = NSMakePoint(mainViewHolder.frame.size.width, 0);
             [v setFrameOrigin:startPoint];
             [[v animator] setFrameOrigin:NSMakePoint(0, 0)];
         } completionHandler:^{

@@ -6,16 +6,14 @@
 //  Copyright © 2019 MacEnhance. All rights reserved.
 //
 
+#import "MF_Plugin.h"
 #import <Foundation/Foundation.h>
-
-NS_ASSUME_NONNULL_BEGIN
 
 @interface MF_Purchase : NSObject
 
-+ (void)pluginInstall:(MSPlugin*)plugin :(NSButton*)theButton :(NSString*)repo;
-+ (void)pushthebutton:(MSPlugin*)plugin :(NSButton*)theButton :(NSString*)repo :(NSProgressIndicator* _Nullable)prog;
-+ (void)checkStatus:(MSPlugin*)plugin :(NSButton*)theButton;
++ (void)pluginInstall:(MF_Plugin*)plugin :(NSButton*)theButton :(NSString*)repo;
++ (void)pushthebutton:(MF_Plugin*)plugin :(NSButton*)theButton :(NSString*)repo :(NSProgressIndicator* _Nullable)prog;
++ (void)checkStatus:(MF_Plugin*)plugin :(NSButton*)theButton;
++ (void)verifyPurchased:(MF_Plugin*)plugin :(NSButton*)theButton;
 
 @end
-
-NS_ASSUME_NONNULL_END
