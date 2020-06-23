@@ -9,10 +9,15 @@
 @import CocoaMarkdown;
 @import AppCenterAnalytics;
 
+@interface MF_FlippedView : NSView
+@end
+
 @interface MF_sidebarButton : NSView
 
+@property Boolean                   selected;
 @property IBOutlet NSImageView*     buttonImage;
 @property IBOutlet NSButton*        buttonClickArea;
+@property IBOutlet NSView*          buttonHighlightArea;
 @property IBOutlet NSTextField*     buttonLabel;
 @property IBOutlet NSView*          linkedView;
 

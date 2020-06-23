@@ -6,11 +6,10 @@
 //  Copyright © 2016 Wolfgang Baird. All rights reserved.
 //
 
-@interface MF_PluginManager : NSObject <NSURLSessionDataDelegate, NSURLSessionDelegate, NSURLSessionTaskDelegate> {
+@interface MF_PluginManager : NSObject <NSURLSessionDataDelegate, NSURLSessionDelegate, NSURLSessionTaskDelegate, NSUserNotificationCenterDelegate> {
     NSMutableArray      *pluginsArray;
     NSMutableDictionary *installedPluginDICT;
     NSMutableDictionary *needsUpdate;
-    
     NSButton            *downloadButton;
     NSProgressIndicator *progressObject;
 }
@@ -24,14 +23,14 @@
 + (NSImage*)pluginGetIcon:(NSDictionary*)plist;
 
 - (NSString*)pluginLocalPath:(NSString*)bundleID;
+- (NSString*)getItemLocalVersion:(NSString*)bundleID;
 
 - (NSMutableDictionary*)getInstalledPlugins;
 
 - (NSMutableDictionary*)getNeedsUpdate;
-- (void)checkforPluginUpdates:(NSTableView*)table :(NSButton*)counter;
 - (void)checkforPluginUpdates:(NSTableView*)table;
+- (void)checkforPluginUpdates:(NSTableView*)table :(NSButton*)counter;
 - (void)checkforPluginUpdatesAndInstall:(NSTableView*)table;
-- (NSUserNotification*)checkforPluginUpdatesNotify;
 
 - (void)readPlugins:(NSTableView *)pluginTable;
 

@@ -7,8 +7,8 @@
 //
 
 #import "AppDelegate.h"
-#import "MF_bundleTinyItem.h"
 #import "MF_searchView.h"
+#import "MF_bundleTinyItem.h"
 
 extern AppDelegate *myDelegate;
 
@@ -20,23 +20,31 @@ extern AppDelegate *myDelegate;
     NSArray             *tableContents;
 }
 
+- (void)checkAndUpdate {
+    if (floor(self.frame.size.width/390.0) != columns || floor(self.frame.size.width/390.0) != _tv.tableColumns.count || columns != _tv.tableColumns.count) {
+        columns = floor(self.frame.size.width/390.0);
+        [self updateColumCount];
+    }
+}
+
 - (void)drawRect:(NSRect)dirtyRect {
-    [super drawRect:dirtyRect];
     NSUInteger pad = self.frame.size.width - (4 * columns);
     for (NSTableColumn* c in self.tv.tableColumns)
         [c setWidth:pad/columns];
-    [_tv setFrame:CGRectMake(0, 0, self.frame.size.width, _tv.frame.size.height)];
+    [self checkAndUpdate];
 }
 
 - (void)updateColumCount {
     // remove extra columns
+    long nuke = _tv.numberOfColumns - columns;
     if (_tv.numberOfColumns > columns)
-        for (int i = 0; i < _tv.numberOfColumns - columns; i++)
+        for (int i = 0; i < nuke; i++)
             [_tv removeTableColumn:_tv.tableColumns.lastObject];
     
     // add needed columns
+    long give = columns - _tv.numberOfColumns;
     if (_tv.numberOfColumns < columns) {
-        for (int i = 0; i < columns - _tv.numberOfColumns; i++) {
+        for (int i = 0; i < give; i++) {
             NSString *identify = [NSString stringWithFormat:@"Col%d", (int)_tv.numberOfColumns + 1];
             NSTableColumn * column = [[NSTableColumn alloc] initWithIdentifier:identify];
             [column setWidth:self.frame.size.width/columns];
@@ -45,9 +53,8 @@ extern AppDelegate *myDelegate;
     }
     
     // set columns to equal width
-    for (NSTableColumn *col in _tv.tableColumns) {
+    for (NSTableColumn *col in _tv.tableColumns)
         [col setWidth:self.frame.size.width/columns];
-    }
     
     // redraw and fit
     [_tv reloadData];
@@ -66,6 +73,7 @@ extern AppDelegate *myDelegate;
         _tv.gridColor = NSColor.clearColor;
         _tv.backgroundColor = NSColor.clearColor;
         _tv.headerView = nil;
+        _tv.selectionHighlightStyle = NSTableViewSelectionHighlightStyleNone;
         
         // Create a scroll view and embed the table view in the scroll view, and add the scroll view to our window.
         NSScrollView * tableContainer = [[NSScrollView alloc] initWithFrame:self.frame];
@@ -77,10 +85,10 @@ extern AppDelegate *myDelegate;
         tableContainer.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
         [self addSubview:tableContainer];
         
-        dispatch_queue_t backgroundQueue = dispatch_queue_create("com.w0lf.MacForge", 0);
+        dispatch_queue_t backgroundQueue = dispatch_queue_create("com.macenhance.MacForge", 0);
         dispatch_async(backgroundQueue, ^{
             if (!MF_repoData.sharedInstance.hasFetched) {
-                [MF_repoData.sharedInstance fetch_repo:@"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo"];
+                [MF_repoData.sharedInstance fetch_repo:MF_REPO_URL];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self.tv reloadData];
                 });
@@ -96,10 +104,7 @@ extern AppDelegate *myDelegate;
         }
     });
     
-    if (floor(self.frame.size.width/390.0) != columns) {
-        columns = floor(self.frame.size.width/390.0);
-        [self updateColumCount];
-    }
+    [self checkAndUpdate];
 }
 
 - (CGFloat)tableView:(NSTableView *)tableView heightOfRow:(NSInteger)row {

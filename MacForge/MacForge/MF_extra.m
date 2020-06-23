@@ -6,7 +6,14 @@
 //
 
 #import "MF_extra.h"
-#import "MFFlippedView.h"
+
+@implementation MF_FlippedView
+
+-(BOOL)isFlipped {
+    return YES;
+}
+
+@end
 
 @implementation MF_sidebarButton
 @end
@@ -46,18 +53,104 @@
     return nil;
 }
 
+- (void)setupSidebar11 {
+    // Setup top buttons
+    NSInteger height = 36;
+    NSInteger resizeWidth = 18;
+    NSUInteger totalHeight = height * 2;
+    NSUInteger yLoc = _mainView.window.frame.size.height - height * 2 - 50;
+    for (MF_sidebarButton *sideButton in _sidebarTopButtons) {
+        
+        // Setup click area
+        NSButton *btn = sideButton.buttonClickArea;
+        if (btn.enabled) {
+            [btn setTarget:self];
+            [btn setAction:@selector(selectView:)];
+            NSRect newFrame = [sideButton frame];
+            newFrame.origin.x = 0;
+            newFrame.origin.y = yLoc;
+            newFrame.size.height = height;
+            yLoc -= height;
+            totalHeight += height;
+            sideButton.hidden = false;
+            [sideButton setFrame:newFrame];
+            [sideButton setWantsLayer:YES];
+            sideButton.layer.backgroundColor = NSColor.clearColor.CGColor;
+        } else {
+            sideButton.hidden = true;
+        }
+        
+        // Image setup
+        sideButton.buttonImage.frame = CGRectMake(18, 8, 20, 20);
+        if (!sideButton.buttonImage.image.isTemplate) [sideButton.buttonImage.image setTemplate:true];
+        if (@available(macOS 10.14, *)) sideButton.buttonImage.contentTintColor = NSColor.controlAccentColor;
+        
+        // Label setup
+        CGRect labelFrame = sideButton.buttonLabel.frame;
+        labelFrame.origin.x = 46;
+        labelFrame.origin.y = 6;
+        sideButton.buttonLabel.frame = labelFrame;
+        [sideButton.buttonLabel setFont:[NSFont systemFontOfSize:16]];
+        
+        // Backing area setup
+        sideButton.buttonHighlightArea.frame = CGRectMake(8, 1, sideButton.frame.size.width - 16, 34);
+        sideButton.buttonHighlightArea.wantsLayer = true;
+        sideButton.buttonHighlightArea.layer.cornerRadius = 5;
+    }
+        
+    // Setup bottom buttons
+    height = 58;
+    yLoc = 0;
+    for (MF_sidebarButton *sideButton in _sidebarBotButtons) {
+        
+        NSButton *btn = sideButton.buttonClickArea;
+        if (btn.enabled) {
+            sideButton.hidden = false;
+            NSRect newFrame = [sideButton frame];
+            newFrame.origin.x = 0;
+            newFrame.origin.y = yLoc;
+            newFrame.size.height = height;
+            yLoc += height;
+            [sideButton setFrame:newFrame];
+            [sideButton setWantsLayer:YES];
+        } else {
+            sideButton.hidden = true;
+        }
+        
+        CGRect labelFrame = sideButton.buttonImage.frame;
+        labelFrame.origin.x = 8;
+        sideButton.buttonImage.frame = labelFrame;
+    }
+    
+    totalHeight += yLoc - 6;
+    CGSize min = CGSizeMake(1000, totalHeight);
+    [_mainWindow setMinSize:min];
+    if (_mainWindow.frame.size.height < min.height) {
+        CGRect frm = _mainWindow.frame;
+        [_mainWindow setFrame:CGRectMake(frm.origin.x, frm.origin.y, frm.size.width, min.height + 16) display:true];
+    }
+}
+
 - (void)setupSidebar {
+    if (NSProcessInfo.processInfo.operatingSystemVersion.minorVersion >= 16) {
+        [self setupSidebar11];
+        return;
+    }
+    
     // Setup top buttons
     NSInteger height = 42;
+    NSInteger resizeWidth = 24;
     NSUInteger totalHeight = height * 2;
-    NSUInteger yLoc = _mainView.window.frame.size.height - height * 2;
-    yLoc -= 50;
+    NSUInteger yLoc = _mainView.window.frame.size.height - height * 2 - 50;
     for (MF_sidebarButton *sideButton in _sidebarTopButtons) {
-        if (sideButton.buttonImage.image.size.width > 18 && sideButton.buttonImage.image.size.height != 30)
-            sideButton.buttonImage.image = [self imageResize:sideButton.buttonImage.image newSize:CGSizeMake(18, sideButton.buttonImage.image.size.height * (18 / sideButton.buttonImage.image.size.height))];
+        
+        if (sideButton.buttonImage.image.size.width > resizeWidth && sideButton.buttonImage.image.size.height != 30)
+            sideButton.buttonImage.image = [self imageResize:sideButton.buttonImage.image newSize:CGSizeMake(resizeWidth, sideButton.buttonImage.image.size.height * (resizeWidth / sideButton.buttonImage.image.size.height))];
         
         if (!sideButton.buttonImage.image.isTemplate)
             [sideButton.buttonImage.image setTemplate:true];
+        
+        if (@available(macOS 10.14, *)) sideButton.buttonImage.contentTintColor = NSColor.controlAccentColor;
         
         NSButton *btn = sideButton.buttonClickArea;
         if (btn.enabled) {
@@ -73,6 +166,8 @@
         } else {
             sideButton.hidden = true;
         }
+        
+        sideButton.buttonHighlightArea.wantsLayer = true;
     }
 
     // Set target + action
@@ -110,6 +205,37 @@
     }
 }
 
+- (void)updateSidebarColor {
+    // Adjust text and background color
+    NSString *osxMode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
+    NSColor *primary = NSColor.darkGrayColor;
+    NSColor *secondary = NSColor.blackColor;
+    NSColor *highlight = NSColor.blackColor;
+    if (_macOS >= 14) {
+        if ([osxMode isEqualToString:@"Dark"]) {
+            primary = NSColor.whiteColor;
+            secondary = NSColor.whiteColor;
+            highlight = NSColor.whiteColor;
+        }
+    }
+    
+    NSMutableArray *allButtons = _sidebarTopButtons.mutableCopy;
+    [allButtons addObjectsFromArray:_sidebarBotButtons];
+    for (MF_sidebarButton *sidebarButton in allButtons) {
+        NSTextField *g = sidebarButton.buttonLabel;
+        NSMutableAttributedString *colorTitle = [NSMutableAttributedString.alloc initWithString:g.stringValue];
+        if (!sidebarButton.selected) {
+            sidebarButton.buttonHighlightArea.layer.backgroundColor = [NSColor clearColor].CGColor;
+            [colorTitle addAttribute:NSForegroundColorAttributeName value:primary range:NSMakeRange(0, g.attributedStringValue.length)];
+            [g setAttributedStringValue:colorTitle];
+        } else {
+            sidebarButton.buttonHighlightArea.layer.backgroundColor = [highlight colorWithAlphaComponent:.11].CGColor;
+            [colorTitle addAttribute:NSForegroundColorAttributeName value:secondary range:NSMakeRange(0, g.attributedStringValue.length)];
+            [g setAttributedStringValue:colorTitle];
+        }
+    }
+}
+
 - (IBAction)selectView:(id)sender {
     MF_sidebarButton *buttonContainer = nil;
     NSButton *button = (NSButton*)sender;
@@ -128,34 +254,12 @@
         [self setMainViewSubView:buttonContainer.linkedView];
     }
     
-    // Adjust text and background color
-    NSString *osxMode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
-    NSColor *primary = NSColor.darkGrayColor;
-    NSColor *secondary = NSColor.blackColor;
-    NSColor *highlight = NSColor.blackColor;
-    if (_macOS >= 14) {
-        if ([osxMode isEqualToString:@"Dark"]) {
-            primary = NSColor.whiteColor;
-            secondary = NSColor.whiteColor;
-            highlight = NSColor.whiteColor;
-        }
-    }
-
     NSMutableArray *allButtons = _sidebarTopButtons.mutableCopy;
     [allButtons addObjectsFromArray:_sidebarBotButtons];
-    for (MF_sidebarButton *sidebarButton in allButtons) {
-        NSTextField *g = sidebarButton.buttonLabel;
-        NSMutableAttributedString *colorTitle = [[NSMutableAttributedString alloc] initWithString:g.stringValue];
-        if (![sidebarButton isEqualTo:buttonContainer]) {
-            [[sidebarButton layer] setBackgroundColor:[NSColor clearColor].CGColor];
-            [colorTitle addAttribute:NSForegroundColorAttributeName value:primary range:NSMakeRange(0, g.attributedStringValue.length)];
-            [g setAttributedStringValue:colorTitle];
-        } else {
-            [[sidebarButton layer] setBackgroundColor:[highlight colorWithAlphaComponent:.25].CGColor];
-            [colorTitle addAttribute:NSForegroundColorAttributeName value:secondary range:NSMakeRange(0, g.attributedStringValue.length)];
-            [g setAttributedStringValue:colorTitle];
-        }
-    }
+    for (MF_sidebarButton *sidebarButton in allButtons)
+        sidebarButton.selected = false;
+    buttonContainer.selected = true;
+    [self updateSidebarColor];
 }
 
 - (void)setViewSubViewWithScrollableView:(NSView*)view :(NSView*)subview {
@@ -169,7 +273,7 @@
 //    scrollView.backgroundColor = NSColor.clearColor;
 
     // configure document view
-    MFFlippedView *docView = [[MFFlippedView alloc] initWithFrame:NSMakeRect(0, 0, view.frame.size.width, subview.frame.size.height)];
+    MF_FlippedView *docView = [[MF_FlippedView alloc] initWithFrame:NSMakeRect(0, 0, view.frame.size.width, subview.frame.size.height)];
     docView.autoresizingMask = NSViewWidthSizable | NSViewMinYMargin;
 
     // configure our subview
@@ -298,6 +402,7 @@
             if ([osxMode isEqualToString:@"Dark"])
                 [_changeLog setTextColor:[NSColor whiteColor]];
         }
+        [self updateSidebarColor];
     }
 }
 

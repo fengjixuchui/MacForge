@@ -19,9 +19,12 @@
 #import "MF_Purchase.h"
 #import "MF_PluginManager.h"
 
+#import "SLColorArt.h"
 #import "SYFlatButton.h"
 
 @interface MF_bundleView : NSView <EDStarRatingProtocol>
+
+@property IBOutlet MF_Plugin*       plugin;
 
 @property IBOutlet EDStarRating*    starRating;
 @property IBOutlet NSTextField*     starScore;
@@ -48,7 +51,6 @@
 @property IBOutlet NSImageView*     bundlePreview2;
 @property IBOutlet NSButton*        bundlePreviewButton1;
 @property IBOutlet NSButton*        bundlePreviewButton2;
-@property IBOutlet AVPlayerView*    bundlePreviewAVPlayer;
 
 // Bundle Infobox
 @property IBOutlet NSTextField*     bundleTarget;
@@ -62,11 +64,12 @@
 @property IBOutlet NSTextField*     bundleCopyright;
 
 // Bundle Buttons
-@property IBOutlet SYFlatButton*    bundleInstall;
-@property IBOutlet SYFlatButton*    bundleShare;
-@property IBOutlet NSButton*        bundleDelete;
-@property IBOutlet NSButton*        bundleContact;
-@property IBOutlet NSButton*        bundleDonate;
+@property IBOutlet NSProgressIndicator* bundleProgress;
+@property IBOutlet SYFlatButton*        bundleInstall;
+@property IBOutlet SYFlatButton*        bundleShare;
+@property IBOutlet NSButton*            bundleDelete;
+@property IBOutlet NSButton*            bundleContact;
+@property IBOutlet NSButton*            bundleDonate;
 
 // Bundle Webview
 @property IBOutlet WebView*         bundleWebView;

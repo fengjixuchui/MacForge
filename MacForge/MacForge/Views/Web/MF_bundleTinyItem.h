@@ -19,16 +19,15 @@
 #import <SDWebImage/SDWebImage.h>
 
 
-@interface MF_bundleTinyItem : NSViewController
-{
+@interface MF_bundleTinyItem : NSViewController {
     MF_Plugin *plug;
 }
 
 @property (weak) IBOutlet NSTextField           *bundleName;
 @property (weak) IBOutlet NSTextField           *bundleDesc;
 @property (weak) IBOutlet NSImageView           *bundleBanner;
+@property (weak) IBOutlet NSImageView           *bundleIcon;
 @property (weak) IBOutlet NSButton              *bundleBackgroundButton;
-@property (weak) IBOutlet NSButton              *bundleButton;
 @property (weak) IBOutlet SYFlatButton          *bundleGet;
 @property (weak) IBOutlet NSProgressIndicator   *bundleProgress;
 

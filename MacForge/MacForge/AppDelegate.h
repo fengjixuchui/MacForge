@@ -28,8 +28,7 @@
 //@import FirebaseStorage;
 //@import FirebaseCoreDiagnostics;
 
-// MacForgeKit
-@import MacForgeKit;
+@import SIPKit;
 
 #import <Collaboration/Collaboration.h>
 #import <SDWebImage/SDWebImage.h>
@@ -42,11 +41,16 @@
 #import "MF_accountManager.h"
 #import "MF_BlacklistManager.h"
 #import "MF_searchView.h"
-#import "MFFlippedView.h"
 
 #import "MF_repoData.h"
 #import "MF_PluginManager.h"
 #import "blacklistTable.h"
+
+// Testing
+static NSString *MF_REPO_URL = @"file:///Users/w0lf/Documents/GitHub/MacForgeRepo/repo";
+
+// Release
+//static NSString *MF_REPO_URL = @"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo";
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSSearchFieldDelegate, NSWindowDelegate> {
     NSMutableArray *watchdogs;
@@ -72,17 +76,13 @@
 @property IBOutlet NSView               *preferencesAbout;
 @property IBOutlet NSView               *preferencesData;
 @property IBOutlet NSView               *preferencesBundles;
+@property IBOutlet NSSegmentedControl   *preferencesInstallToUser;
 
 // Tab views
-@property IBOutlet NSVisualEffectView   *toolBar;
-@property IBOutlet NSScrollView         *mainViewHolder;
 @property IBOutlet NSView               *tabMain;
 @property IBOutlet NSView               *tabPlugins;
 @property IBOutlet NSView               *tabSystemInfo;
 @property IBOutlet NSView               *tabUpdates;
-
-@property IBOutlet NSView               *tabFeatured;
-@property IBOutlet NSView               *tabDiscover;
 @property IBOutlet MF_searchView        *tabSearch;
 
 // Plugins view
@@ -136,8 +136,7 @@
 @property IBOutlet NSSecureTextField    *password;
 
 // System Information view
-@property IBOutlet NSButton             *SIMBLAgentToggle;
-@property IBOutlet NSButton             *SIMBLTogggle;
+@property IBOutlet NSButton             *MacForgePrivHelper;
 @property IBOutlet NSButton             *SIP_filesystem;
 @property IBOutlet NSButton             *SIP_TaskPID;
 @property IBOutlet NSTextField          *SIP_status;
@@ -149,7 +148,7 @@
 
 - (void)setupEventListener;
 - (void)setViewSubView:(NSView*)container :(NSView*)subview;
-- (void)setMainViewSubView:(NSView*)subview :(BOOL)scrolls;
+- (void)updatesearchText;
 
 @end
 

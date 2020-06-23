@@ -35,71 +35,91 @@ extern AppDelegate *myDelegate;
 
 - (void)setupWithPlugin:(MF_Plugin*)plugin {
     plug = plugin;
-    self.bundleName.stringValue = plugin.webName;
-    self.bundleDesc.stringValue = plugin.webDescriptionShort;
-    self.bundleDescFull.stringValue = plugin.webDescription;
-    self.bundleBanner.canDrawSubviewsIntoLayer = YES;
-    [self.bundleBanner.superview setWantsLayer:YES];
+    
+    _bundleName.stringValue = plugin.webName;
+    _bundleDesc.stringValue = plugin.webDescriptionShort;
+    _bundleDescFull.stringValue = plugin.webDescription;
+    _bundleBanner.canDrawSubviewsIntoLayer = true;
+    _bundleBanner.superview.wantsLayer = true;
     
     _bundleGet.backgroundNormalColor = NSColor.whiteColor;
     _bundleGet.backgroundHighlightColor = NSColor.whiteColor;
     _bundleGet.backgroundDisabledColor = NSColor.grayColor;
-    _bundleGet.titleNormalColor = [NSColor colorWithRed:0.4 green:0.6 blue:1 alpha:1];
+    if (@available(macOS 10.14, *)) {
+        _bundleGet.titleNormalColor = NSColor.controlAccentColor;
+    } else {
+        _bundleGet.titleNormalColor = [NSColor colorWithRed:0.4 green:0.6 blue:1 alpha:1];
+    }
     _bundleGet.titleHighlightColor = [NSColor colorWithRed:0.4 green:0.6 blue:1 alpha:1];
     _bundleGet.titleDisabledColor = NSColor.whiteColor;
     _bundleGet.cornerRadius = _bundleGet.frame.size.height/2;
+    if (@available(macOS 10.15, *)) { _bundleGet.layer.cornerCurve = kCACornerCurveContinuous; }
     _bundleGet.spacing = 0.1;
     _bundleGet.borderWidth = 0;
     _bundleGet.momentary = true;
+    _bundleGet.action = @selector(getOrOpen:);
+    _bundleGet.target = self;
     
-    self.bundlePreview.animates = YES;
-    self.bundlePreview.canDrawSubviewsIntoLayer = YES;
-    self.bundlePreview.wantsLayer = true;
-//    self.bundlePreview.image = [NSImage imageNamed:NSImageNameBookmarksTemplate];
-//    self.view.wantsLayer = true;
-//    self.view.layer.backgroundColor = NSColor.redColor.CGColor;
+    _bundleBanner.action = @selector(moreInfo:);
+    _bundleBanner.target = self;
     
-    dispatch_queue_t backgroundQueue0 = dispatch_queue_create("com.w0lf.MacForge", 0);
-    dispatch_async(backgroundQueue0, ^{
-        NSImage *icon = [MF_PluginManager pluginGetIcon:plugin.webPlist];
-        NSString *iconpath = [plugin.webPlist objectForKey:@"icon"];
-        NSString *repostring = @"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo"; //@"https://github.com/w0lfschild/myRepo/raw/master/featuredRepo";
-        NSString *imgurl = [NSString stringWithFormat:@"%@/documents/%@/icon.png", repostring, plugin.bundleID]; //[NSString stringWithFormat:@"%@%@", repostring, iconpath];
-        NSString *preview = [NSString stringWithFormat:@"%@/documents/%@/previewImages/01.png", repostring, plugin.bundleID];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (iconpath) {
-                self.bundleButton.sd_imageIndicator = SDWebImageProgressIndicator.defaultIndicator;
-                [self.bundleButton sd_setImageWithURL:[NSURL URLWithString:imgurl]
-                                     placeholderImage:[UIImage imageNamed:NSImageNameApplicationIcon]];
-            } else {
-                self.bundleButton.image = icon;
-            }
-            
-            if (preview) {
-                self.bundlePreview.sd_imageIndicator = SDWebImageProgressIndicator.defaultIndicator;
-                [self.bundlePreview sd_setImageWithURL:[NSURL URLWithString:preview]
-                                     placeholderImage:nil];
+    _bundlePreview.animates = true;
+    _bundlePreview.wantsLayer = true;
+    _bundlePreview.canDrawSubviewsIntoLayer = true;
+    _bundlePreview.layer.cornerRadius = 5;
+    if (@available(macOS 10.15, *)) { _bundlePreview.layer.cornerCurve = kCACornerCurveContinuous; }
+    _bundlePreview.layer.backgroundColor = [NSColor colorWithRed:1 green:1 blue:1 alpha:0.6].CGColor;
+    _bundlePreview.sd_imageIndicator = SDWebImageActivityIndicator.grayIndicator;
+    _bundlePreview.sd_imageIndicator = SDWebImageProgressIndicator.defaultIndicator;
+    
+    NSImage *icon = [MF_PluginManager pluginGetIcon:plugin.webPlist];
+    NSDictionary *pluginPlist = plugin.webPlist;
+    NSString *repostring = MF_REPO_URL;
+    
+    if (pluginPlist[@"icon"] || pluginPlist[@"customIcon"]) {
+        _bundleIcon.sd_imageIndicator = SDWebImageProgressIndicator.defaultIndicator;
+        [_bundleIcon sd_setImageWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/documents/%@/icon.png", repostring, plugin.bundleID]]
+                             placeholderImage:[UIImage imageNamed:NSImageNameApplicationIcon]];
+    } else {
+        _bundleIcon.image = icon;
+    }
+    
+    NSString *banpath = pluginPlist[@"banner"];
+    if (banpath && ![banpath.pathComponents.firstObject isEqualToString:@"https:"]) banpath = [NSString stringWithFormat:@"%@%@", MF_REPO_URL, banpath];
+    if (!banpath.length) banpath = [NSString stringWithFormat:@"%@/documents/%@/previewImages/01.png", repostring, plugin.bundleID];
+    if (banpath) {
+        [_bundlePreview sd_setImageWithURL:[NSURL URLWithString:banpath] placeholderImage:nil];
+    } else {
+        _bundlePreview.image = nil;
+    }
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        if (banpath.length) {
+            NSImage *a = [NSImage.alloc initWithContentsOfURL:[NSURL URLWithString:banpath]];
+            NSColor *newColor = [[SLColorArt.alloc initWithImage:a].backgroundColor colorWithAlphaComponent:0.5];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                self.bundlePreview.layer.backgroundColor = newColor.CGColor;
                 
-                self.bundlePreview.layer.backgroundColor = [NSColor colorWithRed:1 green:1 blue:1 alpha:0.6].CGColor;
-                self.bundlePreview.layer.cornerRadius = 5;
-            } else {
-//                self.bundlePreview.image = nil;
-            }
-        });
-        
+                // Scale image to fit if it's ratio won't cause much distortion
+                float h = self.bundlePreview.frame.size.height / a.size.height;
+                float w = self.bundlePreview.frame.size.width / a.size.width;
+                float d = fabsf(h - w);
+                if (d <= 0.25)
+                    self.bundlePreview.imageScaling = NSImageScaleAxesIndependently;
+            });
+        }
         [MF_Purchase checkStatus:plugin :self.bundleGet];
     });
 }
 
 
 - (IBAction)getOrOpen:(id)sender {
-    [MF_Purchase pushthebutton:plug :sender :@"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo" :_bundleProgress];
+    [MF_Purchase pushthebutton:plug :sender :MF_REPO_URL :_bundleProgress];
 }
 
 - (IBAction)moreInfo:(id)sender {
     MF_repoData.sharedInstance.currentPlugin = plug;
-    plug.webRepository = @"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo";
+    plug.webRepository = MF_REPO_URL;
     dispatch_async(dispatch_get_main_queue(), ^(void){
         [myDelegate.sidebarController setViewSubViewWithScrollableView:myDelegate.tabMain :myDelegate.sourcesBundle];
     });

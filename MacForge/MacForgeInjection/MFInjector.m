@@ -25,7 +25,7 @@ NSString *const MFFrameworkDstPath = @"/Library/Frameworks/mach_inject_bundle.fr
     self = [super init];
     if (self != nil) {
         // Set up our XPC listener to handle requests on our Mach service.
-        self.listener = [[NSXPCListener alloc] initWithMachServiceName:@"com.w0lf.MacForge.Injector.mach"];
+        self.listener = [[NSXPCListener alloc] initWithMachServiceName:@"com.macenhance.MacForge.Injector.mach"];
         self.listener.delegate = self;
     }
     return self;
@@ -68,6 +68,15 @@ NSString *const MFFrameworkDstPath = @"/Library/Frameworks/mach_inject_bundle.fr
     reply(error);
 }
 
+- (void)installFramework:(NSString *)frameworkPath atlocation:(NSString*)frameworkDestinationPath withReply:(void (^)(mach_error_t))reply {
+    NSError *fileError;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:frameworkDestinationPath])
+        [[NSFileManager defaultManager] removeItemAtPath:frameworkDestinationPath error:&fileError];
+    [[NSFileManager defaultManager] copyItemAtPath:frameworkPath toPath:frameworkDestinationPath error:&fileError];
+    mach_error_t error = (int)fileError.code;
+    reply(error);
+}
+
 - (void)installFramework:(NSString *)frameworkPath withReply:(void (^)(mach_error_t))reply {
     NSError *fileError;
     if ([[NSFileManager defaultManager] fileExistsAtPath:MFFrameworkDstPath])
@@ -87,9 +96,11 @@ NSString *const MFFrameworkDstPath = @"/Library/Frameworks/mach_inject_bundle.fr
     NSFileManager *man = NSFileManager.defaultManager;
     [man createDirectoryAtPath:@"/Library/Application Support/MacEnhance/Plugins" withIntermediateDirectories:true attributes:attrib error:&fileError];
     [man createDirectoryAtPath:@"/Library/Application Support/MacEnhance/Plugins (Disabled)" withIntermediateDirectories:true attributes:attrib error:&fileError];
+    [man createDirectoryAtPath:@"/Library/Application Support/MacEnhance/Preferences" withIntermediateDirectories:true attributes:attrib error:&fileError];
     [man createDirectoryAtPath:@"/Library/Application Support/MacEnhance/Themes" withIntermediateDirectories:true attributes:attrib error:&fileError];
     [man setAttributes:@{ NSFilePosixPermissions : @0777 } ofItemAtPath:@"/Library/Application Support/MacEnhance/Plugins" error:&fileError];
     [man setAttributes:@{ NSFilePosixPermissions : @0777 } ofItemAtPath:@"/Library/Application Support/MacEnhance/Plugins (Disabled)" error:&fileError];
+    [man setAttributes:@{ NSFilePosixPermissions : @0777 } ofItemAtPath:@"/Library/Application Support/MacEnhance/Preferences" error:&fileError];
     [man setAttributes:@{ NSFilePosixPermissions : @0777 } ofItemAtPath:@"/Library/Application Support/MacEnhance/Themes" error:&fileError];
     
     mach_error_t error = (int)fileError.code;

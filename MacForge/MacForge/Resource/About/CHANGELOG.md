@@ -5,11 +5,21 @@
 -   macforge:// links now just use the bundleID
 -   MacForge can now host a UI for plugin settings [@jslegendre](https://github.com/jslegendre)
 -   Improvements made to injector
+-   Search bar in sidebar replaces search in discover view
 -   Removed option for multiple sources
 -   Removed search bar from discover view
 -   Removed navigation bar from discover view
--   Updated Xcode Plugin template
--   Updated Demo Plugin
+-   Removed Xcode Plugin template
+-   Removed Demo Plugin
+-   Hide perminantly balcklisted items from application blacklist
+-   Bundle view developer button in now functions
+-   Bundle view descriptions support markdown (no images)
+-   Support for using the app in fullscreen
+-   New preferences window
+-   Mousecape `.cape` support
+-   Discover view support for banner images 
+-   Discover view shows SIP and Lib Validation requirements
+-   Added progrees to downloads on bundle preview page
 -   Updated information regarding AMFI
 -   Updated SIP notification window
 

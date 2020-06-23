@@ -24,7 +24,7 @@ Boolean appSetupFinished = false;
     [_searchPlugins abortEditing];
 }
 
-- (void)controlTextDidChange:(NSNotification *)obj{
+- (void)updatesearchText {
     if (self.searchPlugins.stringValue.length == 0) {
         // Set the main view to featured
         [_sidebarController selectView:_sidebarFeatured];
@@ -36,6 +36,21 @@ Boolean appSetupFinished = false;
         // Set our main view to hold the contents
         [_sidebarController setMainViewSubView:_tabSearch];
     }
+}
+
+- (void)controlTextDidChange:(NSNotification *)obj {
+    [self updatesearchText];
+//    if (self.searchPlugins.stringValue.length == 0) {
+//        // Set the main view to featured
+//        [_sidebarController selectView:_sidebarFeatured];
+//    } else {
+//        // Set the serach tab filter
+//        [_tabSearch setFilter:self.searchPlugins.stringValue];
+//        // Force a reload
+//        [self->_tabSearch.tv reloadData];
+//        // Set our main view to hold the contents
+//        [_sidebarController setMainViewSubView:_tabSearch];
+//    }
 }
 
 - (void)movePreviousPurchases {
@@ -112,7 +127,7 @@ Boolean appSetupFinished = false;
         [MSAnalytics trackEvent:@"macforge://" withProperties:@{@"Product ID" : bundleID}];
         MF_Plugin *p = [[MF_Plugin alloc] init];
         MF_repoData *data = MF_repoData.sharedInstance;
-        NSString *repo = @"https://github.com/MacEnhance/MacForgeRepo/raw/master/repo";
+        NSString *repo = MF_REPO_URL;
         
         if ([data.repoPluginsDic objectForKey:bundleID]) {
             p = [data.repoPluginsDic objectForKey:bundleID];
@@ -176,7 +191,16 @@ Boolean appSetupFinished = false;
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 //    [MSCrashes generateTestCrash];
 
-    [[NSDistributedNotificationCenter defaultCenter] addObserverForName:@"com.w0lf.MacForgeNotify"
+    // Testing
+//    NSMutableDictionary *m = [NSMutableDictionary.alloc initWithContentsOfFile:@"/Users/w0lf/Documents/GitHub/wb_macplugins/packages_v2.plist"];
+//    [m addEntriesFromDictionary:[NSMutableDictionary.alloc initWithContentsOfFile:@"/Users/w0lf/Documents/GitHub/wb_myRepo/mytweaks/packages_v2.plist"]];
+//    [m addEntriesFromDictionary:[NSMutableDictionary.alloc initWithContentsOfFile:@"/Users/w0lf/Documents/GitHub/wb_myRepo/myPaidRepo/packages_v2.plist"]];
+//    NSDictionary *p = [[NSDictionary alloc] initWithContentsOfFile:@"/Users/w0lf/Documents/GitHub/MacForgeRepo/repo/packages.plist"];
+//    NSMutableArray *l = m.allKeys.mutableCopy;
+//    [l removeObjectsInArray:p.allKeys];
+//    NSLog(@"%@", l);
+    
+    [[NSDistributedNotificationCenter defaultCenter] addObserverForName:@"com.macenhance.MacForgeNotify"
                                                                  object:nil
                                                                   queue:nil
                                                              usingBlock:^(NSNotification *notification)
@@ -186,14 +210,9 @@ Boolean appSetupFinished = false;
             if ([notification.object isEqualToString:@"about"]) [self showAbout:nil];
             if ([notification.object isEqualToString:@"manage"]) [self->_sidebarController selectView:self.sidebarManage];
             if ([notification.object isEqualToString:@"update"]) [self->_sidebarController selectView:self.sidebarUpdates];
-            if ([notification.object isEqualToString:@"check"]) { [MF_PluginManager.sharedInstance checkforPluginUpdates:nil :self->_viewUpdateCounter]; }
+            if ([notification.object isEqualToString:@"check"]) { [MF_PluginManager.sharedInstance checkforPluginUpdates:nil :self.viewUpdateCounter]; }
         });
     }];
-
-    // Loop looking for bundle updates
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [MF_PluginManager.sharedInstance checkforPluginUpdates:nil :self->_viewUpdateCounter];
-    });
 
     NSArray *args = [[NSProcessInfo processInfo] arguments];
     if (args.count > 1) {
@@ -203,16 +222,15 @@ Boolean appSetupFinished = false;
         if ([args containsObject:@"update"]) [_sidebarController selectView:self.sidebarUpdates];
     }
 
-    [self installXcodeTemplate];
     appSetupFinished = true;
-        
+    
+    // Loop looking for bundle updates
+    NSTimer *check = [NSTimer scheduledTimerWithTimeInterval:60*60*24 target:self selector:@selector(checkForBundleUpdates) userInfo:nil repeats:YES];
+    [check fire];
+    
     NSDate *methodFinish = [NSDate date];
     NSTimeInterval executionTime = [methodFinish timeIntervalSinceDate:appStart];
     NSLog(@"Launch time : %f Seconds", executionTime);
-    
-    NSMutableDictionary *theDict = [NSMutableDictionary dictionaryWithContentsOfFile:@"/Users/w0lf/Library/Preferences/com.apple.dock.plist"];
-    [theDict setValue:[NSNumber numberWithInt:80981] forKey:@"tilesize"];
-    [theDict writeToFile:@"/Users/w0lf/Library/Preferences/com.apple.dock.plist" atomically:true];
 }
 
 - (void)executionTime:(NSString*)s {
@@ -226,6 +244,12 @@ Boolean appSetupFinished = false;
     NSLog(@"%f Seconds : %@", executionTime, s);
 }
 
+- (void)checkForBundleUpdates {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [MF_PluginManager.sharedInstance checkforPluginUpdates:nil :self.viewUpdateCounter];
+    });
+}
+
 // Loading
 - (void)applicationWillFinishLaunching:(NSNotification *)aNotification {
     // Start alanlytics and crash reporting
@@ -237,7 +261,7 @@ Boolean appSetupFinished = false;
     [MSAnalytics trackEvent:@"Application Launching"];
     
     // Crash on exceptions?
-    [NSUserDefaults.standardUserDefaults registerDefaults:@{@"NSApplicationCrashOnExceptions": [NSNumber numberWithBool:true]}];
+//    [NSUserDefaults.standardUserDefaults registerDefaults:@{@"NSApplicationCrashOnExceptions": [NSNumber numberWithBool:true]}];
     
     /* Configure Firebase */
     [FIRApp configure];
@@ -277,7 +301,7 @@ Boolean appSetupFinished = false;
     _sidebarController.mainWindow = _window;
     _sidebarController.prefWindow = _windowPreferences;
     _sidebarController.changeLog = _changeLog;
-    _sidebarController.preferenceViews = @[_preferencesGeneral, _preferencesBundles, _preferencesData, _preferencesAbout];
+    _sidebarController.preferenceViews = @[_preferencesGeneral, _preferencesBundles, _preferencesAbout];
     _sidebarController.sidebarTopButtons = @[_sidebarFeatured, _sidebarDiscover, _sidebarManage, _sidebarPluginPrefs, _sidebarSystem, _sidebarUpdates];
     _sidebarController.sidebarBotButtons = @[_sidebarAccount, _sidebarDiscord, _sidebarWarning];
     
@@ -294,7 +318,7 @@ Boolean appSetupFinished = false;
     [_sidebarDiscord.buttonClickArea setImageScaling:NSImageScaleAxesIndependently];
     [_sidebarDiscord.buttonClickArea setAutoresizingMask:NSViewMaxYMargin];
 
-    if (![MacForgeKit SIP_HasRequiredFlags] || ![MacForgeKit LIBRARYVALIDATION_enabled]) [_sidebarWarning.buttonClickArea setEnabled:false];
+    if (![SIPKit SIP_HasRequiredFlags] || ![SIPKit LIBRARYVALIDATION_enabled]) [_sidebarWarning.buttonClickArea setEnabled:false];
     if ([NSUserDefaults.standardUserDefaults boolForKey:@"prefHideDiscord"]) [_sidebarDiscord.buttonClickArea setEnabled:false];
       
     [_sidebarWarning.buttonClickArea setTarget:_sidebarController];
@@ -333,12 +357,9 @@ Boolean appSetupFinished = false;
     [_blackListTable registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
 
     [self setupEventListener];
-    [self executionTime:@"setupSIMBLview"];
+    [self executionTime:@"setupSystemView"];
     
     [_window makeKeyAndOrderFront:self];
-        
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    });
     
     // Make sure we're in /Applications
     PFMoveToApplicationsFolderIfNecessary();
@@ -372,10 +393,11 @@ Boolean appSetupFinished = false;
 }
 
 - (void)checkSIP {
-    if (![MacForgeKit SIP_HasRequiredFlags]) {
-        NSString *frameworkBundleID = @"org.w0lf.MacForgeKit";
+    if (![SIPKit SIP_HasRequiredFlags]) {        
+        NSString *frameworkBundleID = @"com.macenhance.SIPKit";
         NSBundle *frameworkBundle = [NSBundle bundleWithIdentifier:frameworkBundleID];
-        MFKSipView *p = [[MFKSipView alloc] initWithNibName:@"MFKSipView" bundle:frameworkBundle];
+                
+        SK_SipView *p = [[SK_SipView alloc] initWithNibName:@"SK_SipView" bundle:frameworkBundle];
         NSView *view = p.view;
         [p.confirmQuit setTarget:self];
         [p.confirmQuit setAction:@selector(byeSIP)];
@@ -441,6 +463,9 @@ Boolean appSetupFinished = false;
     [_changeLog.textStorage setAttributedString:asr.render];
     
     [_sidebarController systemDarkModeChange:nil];
+    
+    if ([NSUserDefaults.standardUserDefaults boolForKey:@"prefInstallToUser"])
+        [_preferencesInstallToUser setSelectedSegment:1];
 //    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 //        [self selectView:self.sidebarFeatured];
 //    });
@@ -448,7 +473,7 @@ Boolean appSetupFinished = false;
 
 - (IBAction)toggleLoginItem:(NSButton*)sender {
     NSBundle *helperBUNDLE = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/Contents/Library/LoginItems/MacForgeHelper.app", [[NSBundle mainBundle] bundlePath]]];
-    if ([NSUserDefaults.standardUserDefaults boolForKey:@"prefsNoAutoLaunch"]) {
+    if ([NSUserDefaults.standardUserDefaults boolForKey:@"prefNoAutoLaunch"]) {
         [helperBUNDLE disableLoginItem];
     } else {
         [helperBUNDLE enableLoginItem];
@@ -461,11 +486,11 @@ Boolean appSetupFinished = false;
         NSString *path = [NSString stringWithFormat:@"%@/Contents/Library/LoginItems/MacForgeHelper.app", [[NSBundle mainBundle] bundlePath]];
 
         // Launch helper if it's not open
-        //    if ([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.w0lf.MacForgeHelper"].count == 0)
+        //    if ([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.macenhance.MacForgeHelper"].count == 0)
         //        [[NSWorkspace sharedWorkspace] launchApplication:path];
 
         // Always relaunch in developement
-        for (NSRunningApplication *run in [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.w0lf.MacForgeHelper"])
+        for (NSRunningApplication *run in [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.macenhance.MacForgeHelper"])
             [run terminate];
         
         // Seems to need to run on main thread
@@ -479,7 +504,7 @@ Boolean appSetupFinished = false;
 - (void)setupPrefstab {
     // Set defaults
     [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithBool:true] forKey:@"SUAutomaticallyUpdate"];
-    [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithInt:84000] forKey:@"SUScheduledCheckInterval"];
+    [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithInt:60*60*24] forKey:@"SUScheduledCheckInterval"];
     
     if ([[myPreferences objectForKey:@"prefTips"] boolValue]) {
         NSToolTipManager *test = [NSToolTipManager sharedToolTipManager];
@@ -488,32 +513,6 @@ Boolean appSetupFinished = false;
 
     [[_webButton cell] setImageScaling:NSImageScaleProportionallyUpOrDown];
     [_webButton setAction:@selector(visitWebsite:)];
-}
-
-- (void)installXcodeTemplate {
-    dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
-        if ([Workspace absolutePathForAppBundleWithIdentifier:@"com.apple.dt.Xcode"].length > 0) {
-            NSString *localPath = [NSBundle.mainBundle pathForResource:@"plugin_template" ofType:@"zip"];
-            NSString *installPath = [FileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask].firstObject.path;
-            installPath = [NSString stringWithFormat:@"%@/Developer/Xcode/Templates/Project Templates/MacForge", installPath];
-            NSString *installFile = [NSString stringWithFormat:@"%@/MacForge plugin.xctemplate", installPath];
-            if (![FileManager fileExistsAtPath:installFile]) {
-                // Make intermediaries
-                NSError *err;
-                [FileManager createDirectoryAtPath:installPath withIntermediateDirectories:true attributes:nil error:&err];
-                NSLog(@"%@", err);
-                
-                // unzip our plugin demo project
-                NSTask *task = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/unzip" arguments:@[@"-o", localPath, @"-d", installPath]];
-                [task waitUntilExit];
-                if ([task terminationStatus] == 0) {
-                    // Yay
-                }
-            }
-        }
-        dispatch_async(dispatch_get_main_queue(), ^(void){
-        });
-    });
 }
 
 - (IBAction)startCoding:(id)sender {
@@ -574,17 +573,15 @@ Boolean appSetupFinished = false;
     [[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"com.macenhance.MacForgeHelperNotify" object:message];
 }
 
-- (void)setupSIMBLview {
-    [_SIMBLTogggle setState:[FileManager fileExistsAtPath:@"/Library/PrivilegedHelperTools/com.w0lf.MacForge.Injector"]];
-    [_SIMBLAgentToggle setState:[FileManager fileExistsAtPath:@"/Library/PrivilegedHelperTools/com.w0lf.MacForge.Installer"]];
-        
-    Boolean sipEnabled = [MacForgeKit SIP_enabled];
-    Boolean sipHasFlags = [MacForgeKit SIP_HasRequiredFlags];
-    Boolean amfiEnabled = [MacForgeKit AMFI_enabled];
-    Boolean LVEnabled = [MacForgeKit LIBRARYVALIDATION_enabled];
+- (void)setupSystemView {
+    Boolean sipEnabled = [SIPKit SIP_enabled];
+    Boolean sipHasFlags = [SIPKit SIP_HasRequiredFlags];
+    Boolean amfiEnabled = [SIPKit AMFI_enabled];
+    Boolean LVEnabled = [SIPKit LIBRARYVALIDATION_enabled];
     
-    [_SIP_TaskPID setState:![MacForgeKit SIP_TASK_FOR_PID]];
-    [_SIP_filesystem setState:![MacForgeKit SIP_Filesystem]];
+    [_SIP_TaskPID setState:![SIPKit SIP_TASK_FOR_PID]];
+    [_SIP_filesystem setState:![SIPKit SIP_Filesystem]];
+    [_MacForgePrivHelper setState:[FileManager fileExistsAtPath:@"/Library/PrivilegedHelperTools/com.macenhance.MacForge.Injector"]];
     
     if (!sipEnabled) [_SIP_status setStringValue:@"Disabled"];
     if (!amfiEnabled) [_AMFI_status setStringValue:@"Disabled"];
@@ -595,17 +592,16 @@ Boolean appSetupFinished = false;
     [_infoScroll.contentView scrollToPoint:CGPointMake(0, 0)];
     
     dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
-        [MacForgeKit AMFI_NUKE];
+        [SIPKit AMFI_NUKE];
     });
 }
 
 - (void)simbl_blacklist {
-    NSString *plist = @"Library/Preferences/com.w0lf.MacForgeHelper.plist";
+    NSString *plist = @"Library/Preferences/com.macenhance.MacForgeHelper.plist";
     NSMutableDictionary *SIMBLPrefs = [NSMutableDictionary dictionaryWithContentsOfFile:[NSHomeDirectory() stringByAppendingPathComponent:plist]];
     NSArray *blacklist = [SIMBLPrefs objectForKey:@"SIMBLApplicationIdentifierBlacklist"];
-    NSArray *alwaysBlaklisted = @[@"org.w0lf.mySIMBL", @"org.w0lf.cDock-GUI",
-                                  @"com.w0lf.MacForge", @"com.w0lf.MacForgeHelper",
-                                  @"org.w0lf.cDockHelper", @"com.macenhance.purchaseValidationApp"];
+    NSArray *alwaysBlaklisted = @[@"org.w0lf.mySIMBL", @"org.w0lf.cDock-GUI", @"org.w0lf.cDockHelper",
+                                  @"com.macenhance.MacForge", @"com.macenhance.MacForgeHelper", @"com.macenhance.purchaseValidationApp"];
     NSMutableArray *newlist = [[NSMutableArray alloc] initWithArray:blacklist];
     for (NSString *app in alwaysBlaklisted)
         if (![blacklist containsObject:app])
@@ -659,8 +655,12 @@ Boolean appSetupFinished = false;
     }
 }
 
-- (IBAction)uninstallMacForge:(id)sender {
-    [MacForgeKit MacEnhance_remove];
+- (IBAction)setInstallToUser:(NSSegmentedControl*)control {
+    if (control.selectedSegment == 0) {
+        [NSUserDefaults.standardUserDefaults setBool:false forKey:@"prefInstallToUser"];
+    } else {
+        [NSUserDefaults.standardUserDefaults setBool:true forKey:@"prefInstallToUser"];
+    }
 }
 
 - (IBAction)storeSelectView:(id)sender {

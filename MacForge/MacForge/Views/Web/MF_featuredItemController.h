@@ -15,6 +15,7 @@
 #import "MF_Purchase.h"
 #import "MF_repoData.h"
 
+#import "SLColorArt.h"
 #import "SYFlatButton.h"
 #import <SDWebImage/SDWebImage.h>
 
@@ -26,9 +27,9 @@
 @property IBOutlet NSTextField          *bundleDesc;
 @property IBOutlet NSTextField          *bundleDescFull;
 @property IBOutlet NSImageView          *bundlePreview;
-@property IBOutlet NSButton             *bundleBanner;
-@property IBOutlet NSButton             *bundleButton;
+@property IBOutlet NSImageView          *bundleIcon;
 @property IBOutlet SYFlatButton         *bundleGet;
+@property IBOutlet NSButton             *bundleBanner;
 @property IBOutlet NSProgressIndicator  *bundleProgress;
 
 - (IBAction)getOrOpen:(id)sender;
