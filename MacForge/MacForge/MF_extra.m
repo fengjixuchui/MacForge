@@ -31,8 +31,11 @@
 - (instancetype)init {
     MF_extra *res = [super init];
     _macOS = 9;
-    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
-        _macOS = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
+    if ([NSProcessInfo.processInfo respondsToSelector:@selector(operatingSystemVersion)]) {
+        _macOS = NSProcessInfo.processInfo.operatingSystemVersion.minorVersion;
+        if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion == 11)
+            _macOS += 16;
+    }
     return res;
 }
 
@@ -56,7 +59,6 @@
 - (void)setupSidebar11 {
     // Setup top buttons
     NSInteger height = 36;
-    NSInteger resizeWidth = 18;
     NSUInteger totalHeight = height * 2;
     NSUInteger yLoc = _mainView.window.frame.size.height - height * 2 - 50;
     for (MF_sidebarButton *sideButton in _sidebarTopButtons) {
@@ -130,7 +132,7 @@
     }
     
     totalHeight += yLoc - 6;
-    CGSize min = CGSizeMake(1000, totalHeight);
+    CGSize min = CGSizeMake(1000, totalHeight + 10);
     [_mainWindow setMinSize:min];
     if (_mainWindow.frame.size.height < min.height) {
         CGRect frm = _mainWindow.frame;
@@ -139,11 +141,11 @@
 }
 
 - (void)setupSidebar {
-    if (NSProcessInfo.processInfo.operatingSystemVersion.minorVersion >= 16) {
+    if (_macOS >= 16) {
         [self setupSidebar11];
         return;
     }
-    
+        
     // Setup top buttons
     NSInteger height = 42;
     NSInteger resizeWidth = 24;
@@ -151,13 +153,13 @@
     NSUInteger yLoc = _mainView.window.frame.size.height - height * 2 - 50;
     for (MF_sidebarButton *sideButton in _sidebarTopButtons) {
         
-        if (sideButton.buttonImage.image.size.width > resizeWidth && sideButton.buttonImage.image.size.height != 30)
-            sideButton.buttonImage.image = [self imageResize:sideButton.buttonImage.image newSize:CGSizeMake(resizeWidth, sideButton.buttonImage.image.size.height * (resizeWidth / sideButton.buttonImage.image.size.height))];
-        
-        if (!sideButton.buttonImage.image.isTemplate)
-            [sideButton.buttonImage.image setTemplate:true];
-        
-        if (@available(macOS 10.14, *)) sideButton.buttonImage.contentTintColor = NSColor.controlAccentColor;
+//        if (sideButton.buttonImage.image.size.width > resizeWidth && sideButton.buttonImage.image.size.height != 30)
+//            sideButton.buttonImage.image = [self imageResize:sideButton.buttonImage.image newSize:CGSizeMake(resizeWidth, sideButton.buttonImage.image.size.height * (resizeWidth / sideButton.buttonImage.image.size.height))];
+//
+//        if (!sideButton.buttonImage.image.isTemplate)
+//            [sideButton.buttonImage.image setTemplate:true];
+//
+//        if (@available(macOS 10.14, *)) sideButton.buttonImage.contentTintColor = NSColor.controlAccentColor;
         
         NSButton *btn = sideButton.buttonClickArea;
         if (btn.enabled) {
@@ -173,6 +175,11 @@
         } else {
             sideButton.hidden = true;
         }
+        
+        // Image setup
+        sideButton.buttonImage.frame = CGRectMake(28, 10, 22, 22);
+        if (!sideButton.buttonImage.image.isTemplate) [sideButton.buttonImage.image setTemplate:true];
+//        if (@available(macOS 10.14, *)) sideButton.buttonImage.contentTintColor = NSColor.controlAccentColor;
         
         sideButton.buttonHighlightArea.wantsLayer = true;
     }
@@ -326,7 +333,7 @@
     
     // Center the window in our main window
     if (![_prefWindow isVisible]) {
-        NSRect frm      = NSApp.mainWindow.frame;
+        NSRect frm      = _mainWindow.frame;
         NSRect myfrm    = _prefWindow.frame;
         [_prefWindow setFrameOrigin:CGPointMake(frm.origin.x + frm.size.width / 2 - myfrm.size.width / 2,
                                                 frm.origin.y + frm.size.height / 2 - myfrm.size.height / 2)];
